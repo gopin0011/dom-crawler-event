@@ -1,6 +1,8 @@
 ## Dom Crawler API
 get /liputan6 
 - ambil semua berita di halaman https://www.liputan6.com/news/indeks
+
+
 get /getPost
 - mengambil isi berita 
 - parameter: 
