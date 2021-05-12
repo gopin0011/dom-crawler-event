@@ -1,3 +1,15 @@
+## Dom Crawler API
+get /liputan6 
+- ambil semua berita di halaman https://www.liputan6.com/news/indeks
+get /getPost
+- mengambil isi berita 
+- parameter: 
+    - source=LIPUTAN6DOTCOM
+    - dataType=['Article', 'Photo', 'Video']
+    - urlPath=https://www.liputan6.com/news/read/4556776/satgas-covid-19-minta-masyarakat-di-zona-hijau-dan-kuning-tidak-silaturahmi-fisik
+- contoh: /getPost?source=LIPUTAN6DOTCOM&dataType=Article&urlPath=https://www.liputan6.com/news/read/4556776/satgas-covid-19-minta-masyarakat-di-zona-hijau-dan-kuning-tidak-silaturahmi-fisik
+
+
 <p align="center"><img src="https://res.cloudinary.com/dtfbvvkyp/image/upload/v1566331377/laravel-logolockup-cmyk-red.svg" width="400"></p>
 
 <p align="center">
