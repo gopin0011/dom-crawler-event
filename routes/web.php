@@ -15,5 +15,14 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/publicholidays', 'EventController@crawlerIdulAdha');
 Route::get('/liputan6', 'EventController@liputan6Index');
+
+Route::post('/liputan6', function () {
+    return abort(404);
+});
+
+Route::get('/getPost', 'EventController@getPost');
+
+Route::post('/getPost', function () {
+    return abort(404);
+});
