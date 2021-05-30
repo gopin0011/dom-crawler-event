@@ -1,6 +1,10 @@
 ## Dom Crawler API
 get /liputan6 
 - ambil semua berita di halaman https://www.liputan6.com/news/indeks
+- parameter:
+    - page=2
+    - contoh: /liputan6?page=2
+- jika tanpa parameter, page=1
 
 
 get /getPost

@@ -121,19 +121,76 @@ class EventController extends Controller
 
         $return['source'] = $request->source;
         $return['url'] = $request->urlPath;
+        $return['dataType'] = $request->dataType;
 
         $client = new Client(HttpClient::create(['timeout' => 10]));
 
         try {
             $crawler = $client->request($request->method(), $request->urlPath);
 
-            if ($request->dataType == 'Article')
+            if ($request->source == self::$liputan6Source)
             {
-                $crawler->filter('article[class="hentry main"]')->each(function (Crawler $node) use (&$all, &$data) {
-                    $data['title'] = $node->children()->filter('div[class="read-page-upper"] > header[class="read-page--header"] > h1[class="read-page--header--title entry-title"]')->text();
-                    $data['image'] = $node->children()->filter('div[class="read-page-upper"] > div[class="read-page--content"] > div[class="read-page--top-media"] > figure')->attr('data-image'); //a[class="read-page--photo-gallery--item__link"] > picture[class="read-page--photo-gallery--item__picture"] > img[class="read-page--photo-gallery--item__picture-lazyload lazyloaded"]')->attr('src');
-                    $data['content'] = $node->children()->filter('div[class="read-page-upper"] > div[class="read-page--content"] > div[class="article-content-body article-content-body_with-aside"]')->text();
-                });
+                if ($request->dataType == 'Article')
+                {
+                    try {
+                        $crawler->filter('article[class="hentry main"]')->each(function (Crawler $node) use (&$data) {
+                            $data['title'] = $node->children()->filter('div[class="read-page-upper"] > header[class="read-page--header"] > h1[class="read-page--header--title entry-title"]')->text();
+                            $data['image'] = [
+                                'src' => $node->children()->filter('div[class="read-page-upper"] > div[class="read-page--content"] > div[class="read-page--top-media"] > figure')->attr('data-image'),
+                                'caption' => $node->children()->filter('div[class="read-page-upper"] > div[class="read-page--content"] > div[class="read-page--top-media"] > figure > figcaption[class="read-page--photo-gallery--item__caption"]')->text(),
+                            ];
+                            $node->children()->filter('div[class="read-page-upper"] > div[class="read-page--content"] > div[class="article-content-body article-content-body_with-aside"] > div[class^="article-content-body__item-page"] > div[class="article-content-body__item-content"]')->each(function (Crawler $item) use (&$data) {
+                                $image = null;
+                                if ($item->parents()->children()->filter('div[class="article-content-body__item-media"]')->count() > 0)
+                                {
+                                    $image['src'] = $item->parents()->children()->filter('div[class="article-content-body__item-media"] > figure')->attr('data-image');
+                                    $image['caption'] = $item->parents()->children()->filter('div[class="article-content-body__item-media"] > figure > figcaption')->text();
+                                }
+                                $data['content'][] = [
+                                        'image' => $image,
+                                        'title' => ($item->parents()->attr('data-title') == "") ? null : $item->parents()->attr('data-title'),
+                                        'text' => $item->text(),
+                                ];
+                            });
+                        });
+                    }
+                    catch(\Exception $e) {
+                        $return['reason'] = $e->getMessage();
+                        return $this->returnData($return, $data);
+                    }
+                }
+                else if ($request->dataType == 'Video')
+                {
+                    try {
+                        $crawler->filter('article[class="hentry main"] > div[class="read-page-upper"] > div[class="read-page--content"] > div[class="read-page--top-media"]')->each(function (Crawler $node) use (&$data) {
+                            $caption = $node->text();
+                            $videoSrc = $node->children()->filter('div[class="read-page--video-gallery--item"]')->children()->eq(0)->attr('src');
+                            $data['videoSrc'] = $videoSrc;
+                            $data['caption'] = $caption;
+                        });
+                    }
+                    catch(\Exception $e) {
+                        $return['reason'] = $e->getMessage();
+                        return $this->returnData($return, $data);
+                    }
+                }
+                else
+                {
+                    try {
+                        $crawler->filter('div[class="read-page-upper"] > div[class="photo-container"]')->each(function (Crawler $node) use (&$data) {
+                            $data['title'] = $node->children()->eq(1)->children()->filter('div > header > div > h1')->text();
+                            $data['content'] = $node->children()->eq(1)->children()->filter('div > header > div > div[class="read-page--photo-tag--header__content"]')->text();
+                            $data['contentDate'] = $node->children()->eq(1)->children()->filter('div > header > div > p')->children()->eq(0)->text();
+                            $node->children()->eq(0)->children()->eq(1)->children()->eq(1)->children()->filter('div > figure')->each(function (Crawler $figure) use (&$data) {
+                                $data['image'][] = $figure->attr('data-image');
+                            });
+                        });
+                    }
+                    catch(\Exception $e) {
+                        $return['reason'] = $e->getMessage();
+                        return $this->returnData($return, $data);
+                    }
+                }
             }
         }
         catch(\Exception $e) {
@@ -141,13 +198,15 @@ class EventController extends Controller
             return $this->returnData($return, $data);
         }
 
+        $return['status'] = true;
+
         return $this->returnData($return, $data);
     }
 
     public function returnData($return = [], $data =[])
     {
         $return['result'] = $data;
-
+dump($return);
         return json_encode($return);
     }
 }
